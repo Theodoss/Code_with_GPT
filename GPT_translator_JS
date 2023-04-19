@@ -4,7 +4,7 @@ import sys
 import json
 
 # Replace with your OpenAI API key
-openai.api_key = "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"
+openai.api_key = 
 previous_code = []
 
 def translate(text):
