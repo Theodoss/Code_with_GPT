@@ -1,0 +1,94 @@
+import re
+import openai
+import sys
+import json
+
+# Replace with your OpenAI API key
+openai.api_key = "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"
+previous_code = []
+
+def translate(text):
+    print(f'準備翻譯字段:{text}')
+    print(f'提示字段:{previous_code}')
+    response = openai.ChatCompletion.create(
+        model="gpt-3.5-turbo",
+        messages=[
+            {"role": "user", "content": f"For your reference only in order to make the context reasonable. This is previous code up to ten line in a list. : {previous_code}"},
+            {"role": "user", "content": f"This is the .js code of a website that content chinese term. You need to convert it into proper english term that a manufacturing industry website would use. if there are multipul term to choice. choice one of the best term. '{text}'"},
+            {"role": "user","content": "Your output would provide to a python function that only accept one answer, the result must in a '' bucket."}
+        ]
+    )
+    translation = response.choices[0].message.content
+    print(f'翻譯完成字段:{translation}')
+    match = english(translation)
+    return "'"+ match+ "'"
+
+# 抓出翻譯後的雙引號中的英文字段
+
+def english(line):
+    if "'" not in line and '"' not in line:
+        line= "'"+line+"'"
+    if '"' in line:
+        line = line.replace('"',"'")
+    matches = re.findall(r"'(.*?)'", line)
+    # matches = re.findall(r'"(.*?)"', line)
+    # if not matches:
+    #     matches = re.findall(r"'(.*?)'", line)
+
+    for match in matches:
+        if match.isascii() and all(c.isalnum() or c.isspace() for c in match):
+            return match
+    return None
+
+# 讀寫檔案，判斷是否進行翻譯
+def translate_js_file(input_file, output_file):
+    with open(input_file, 'r', encoding='utf-8') as infile, \
+         open(output_file, 'w', encoding='utf-8') as outfile:
+        for line in infile:
+            #判斷是否包含中文
+            chinese_ornot = contains_chinese(line)
+            # 判斷是否包含雙括弧
+            matchObj_1 = re.search(r"'(.*?)'", line)
+            matchObj_2 = re.search(r'"(.*?)"', line)
+            if matchObj_1 and chinese_ornot:
+                try:
+                    translated_line = translate(matchObj_1.group(1))
+                    new_string = re.sub(r"'[^']*'", translated_line, line)
+                except:
+                    new_string = re.sub(r"'[^']*'", "#############", line)
+                print(f'最後添加字段{new_string}')
+                previous_message_contral(new_string)
+                outfile.write(new_string)
+            elif matchObj_2 and chinese_ornot:
+                try:
+                    translated_line = translate(matchObj_2.group(1))
+                    new_string = re.sub(r'"[^"]*"' , translated_line, line)
+                except:
+                    new_string = re.sub(r'"[^"]*"', "#############", line)
+                print(f'最後添加字段{new_string}')
+                previous_message_contral(new_string)
+                outfile.write(new_string)
+            else:
+                previous_message_contral(line)
+                outfile.write(line)
+
+def previous_message_contral(message):
+    previous_code.append(message)
+    if len(previous_code) > 10:
+        previous_code.pop(0)
+
+def contains_chinese(text):
+    # 定義繁體中文和簡體中文的 Unicode 範圍
+    chinese_pattern = re.compile('[\u4e00-\u9fa5\u3400-\u4dbf]+')
+    # 使用正則表達式匹配
+    result = chinese_pattern.search(text)
+    # 如果匹配到則返回 True，否則返回 False
+    return result is not None
+
+if __name__ == "__main__":
+
+    input_file = "VDCS_zh1.js"
+    output_file = "VDCS_eng1.txt"
+    
+    translate_js_file(input_file, output_file)
+    print(f"Translated file saved as {output_file}")
