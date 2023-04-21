@@ -1,0 +1,76 @@
+import tkinter as tk
+from tkinter import messagebox
+import openai
+# 輸入您的 OpenAI API 密鑰
+openai.api_key = "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"
+previous_id = []
+
+# def chat_gpt4(prompt):
+#     # 輸入您的 OpenAI API 密鑰
+#     openai.api_key = ""
+#
+#     try:
+#         response = openai.ChatCompletion.create(
+#             model="gpt-3.5-turbo",
+#             messages=[
+#                 {"role": "system","content": f"For your reference only, this is previous chat ID: {previous_id}"},
+#                 {"role": "user","content": f"{prompt}"},
+#             ]
+#         )
+#         previous_id.append(response.id)
+#         print(previous_id)
+#         print(response.choices[0].message.content)
+#         return response.choices[0].message.content
+#     except Exception as e:
+#         print(e)
+#         return "抱歉，出現了問題。"
+
+# 使用 GPT-4 的函數
+def chat_gpt4(prompt):
+    try:
+        response = openai.ChatCompletion.create(
+            model="gpt-3.5-turbo",
+            messages=[
+                {"role": "system","content": f"For your reference only, this is previous chat: {previous_id}"},
+                {"role": "user","content": f"{prompt}"},
+            ]
+        )
+        print(previous_id)
+        print(response.choices[0].message.content)
+        return response.choices[0].message.content
+    except Exception as e:
+        print(e)
+        return "抱歉，出現了問題。"
+
+
+
+# 處理按鈕點擊事件的函數
+def on_send_click():
+    question = user_input.get()
+    previous_id.append(question)
+    chat_history.configure(state="normal")
+    chat_history.insert(tk.END, f"你：{question}\n")
+    user_input.delete(0, tk.END)
+
+    answer = chat_gpt4(question)
+    previous_id.append(answer)
+    chat_history.insert(tk.END, f"GPT-4：{answer}\n")
+
+
+# 創建主視窗
+root = tk.Tk()
+root.title("ChatGPT 與 GPT-4 的對話")
+
+# 聊天歷史視窗
+chat_history = tk.Text(root, wrap="word", state="disabled")
+chat_history.grid(row=0, column=0, columnspan=2, padx=5, pady=5)
+
+# 使用者輸入框
+user_input = tk.Entry(root, width=50)
+user_input.grid(row=1, column=0, padx=5, pady=5)
+
+# 發送按鈕
+send_button = tk.Button(root, text="發送", command=on_send_click)
+send_button.grid(row=1, column=1, padx=5, pady=5)
+
+root.mainloop()
